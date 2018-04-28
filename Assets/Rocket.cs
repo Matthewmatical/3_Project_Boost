@@ -10,19 +10,35 @@ public class Rocket : MonoBehaviour
     AudioSource audioSource;
     [SerializeField] float rotateControl = 150f;
     [SerializeField] float thrustControl = 50f;
+    [SerializeField] float brakeControl = 1f;
 
     void Start ()
     {
         rigidBody = GetComponent<Rigidbody>();
         audioSource = GetComponent<AudioSource>();
-	}
+    }
+
 	
 	void Update ()
     {
+        AirBrake();
         Thrust();
         Rotate();
         ResetPos();
 	}
+
+    private void AirBrake()
+    {
+        if (Input.GetKey(KeyCode.Space))
+        {
+
+            rigidBody.drag = (brakeControl);
+        }
+        else
+        {
+            rigidBody.drag = (0.2f);
+        }
+    }
 
     void OnCollisionEnter(Collision collision)
     {
@@ -31,7 +47,7 @@ public class Rocket : MonoBehaviour
             case "Friendly":
                 //do nothing
                 break;
-            case: "Fuel";
+            case "Fuel":
                 //acquire fuel
                 break;
             default:

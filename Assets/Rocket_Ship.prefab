@@ -660,3 +660,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   rotateControl: 250
   thrustControl: 50
+  brakeControl: 5
