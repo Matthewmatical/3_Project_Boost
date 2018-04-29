@@ -7,11 +7,13 @@ public class Rocket : MonoBehaviour
     int Level;
     enum State { Alive, Dying, Transcending}
     State state = State.Alive;
-
+    [SerializeField] bool godMode = true;
     Rigidbody rigidBody;
     AudioSource audioSource;
     [SerializeField] float rotateControl = 150f;
-    [SerializeField] float thrustControl = 50f;
+    [SerializeField] int thrustControl;
+
+
     [SerializeField] float brakeControl = 1f;
     [SerializeField] AudioClip engineSound;
     [SerializeField] AudioClip dieSound;
@@ -19,6 +21,9 @@ public class Rocket : MonoBehaviour
     [SerializeField] ParticleSystem enginePart;
     [SerializeField] ParticleSystem diePart;
     [SerializeField] ParticleSystem levelPart;
+
+    const float baseDrag = 0.2f;
+    const int startingThrust = 1500;
 
     void Start ()
     {
@@ -30,25 +35,49 @@ public class Rocket : MonoBehaviour
 	void Update ()
     {
         //todo stop sound on death
-
+        if Debug.isDebugBuild)
+        {
+            debugMode(); 
+        }
         if (state == State.Alive)
         {
-                AirBrake();
-                Thrust();
-                Rotate();
-                ResetPos();
-        }
-        else
-        {
 
+            ApplyTurbo();
+            AirBrake();
+            Thrust();
+            Rotate();
+            ResetPos();
         }
 
 	}
 
+    private void debugMode()
+    {
+        if (Input.GetKey(KeyCode.L))
+        {
+            LoadNextScene();
+        }
 
+        if (Input.GetKeyDown(KeyCode.C))
+        {
+            godMode = !godMode;
+        }
+    }
 
+    private void ApplyTurbo()
+    {
 
-
+        if (Input.GetKey(KeyCode.LeftShift))
+        {
+            int doubleThrust = startingThrust * 4;
+            thrustControl = doubleThrust;
+        }
+        else
+        {
+            thrustControl = startingThrust;
+        }
+            
+    }
     private void AirBrake()
     {
         if (Input.GetKey(KeyCode.Space))
@@ -58,7 +87,7 @@ public class Rocket : MonoBehaviour
         }
         else
         {
-            rigidBody.drag = (0.2f);
+            rigidBody.drag = (baseDrag);  //make into variable
         }
     }
     private void Thrust()
@@ -74,17 +103,15 @@ public class Rocket : MonoBehaviour
             audioSource.Stop();
         }
     }
-
     private void ApplyThrust()
     {
-        rigidBody.AddRelativeForce(Vector3.up * thrustControl);
+        rigidBody.AddRelativeForce(Vector3.up * thrustControl * Time.deltaTime);
         if (!audioSource.isPlaying)
         {
             audioSource.PlayOneShot(engineSound);
         }
         enginePart.Play();
     }
-
     private void Rotate()
     {
         rigidBody.freezeRotation = true; //take manual control
@@ -131,6 +158,10 @@ public class Rocket : MonoBehaviour
                 LevelTransition();
                 break;
             default:
+                if (godMode == true)
+                {
+                    return;
+                }
                 DeathCondition();
                 break;
 
@@ -147,7 +178,6 @@ public class Rocket : MonoBehaviour
 
         Invoke("ReloadScene", 3f); //change time to parameter
     }
-
     private void LevelTransition()
     {
         state = State.Transcending;

@@ -321,7 +321,7 @@ Transform:
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1761725714383038}
   m_LocalRotation: {x: 0.75105983, y: -0, z: -0, w: 0.6602343}
-  m_LocalPosition: {x: 0, y: -2.09, z: -0.27}
+  m_LocalPosition: {x: 0, y: -2.39, z: -0.27}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 4512954559779216}
@@ -751,8 +751,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: deb216d3d0d295e41bc3c6fffc13444a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  godMode: 0
   rotateControl: 250
-  thrustControl: 50
+  thrustControl: 1500
   brakeControl: 5
   engineSound: {fileID: 8300000, guid: 8830dc2c9e8cb3640a57f4c0a32bf1ba, type: 3}
   dieSound: {fileID: 8300000, guid: 56fe70bbdf69c7244867fe165026620f, type: 3}
