@@ -1,6 +1,7 @@
 ﻿using System;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class Rocket : MonoBehaviour
 {
@@ -34,8 +35,7 @@ public class Rocket : MonoBehaviour
 	
 	void Update ()
     {
-        //todo stop sound on death
-        if Debug.isDebugBuild)
+        if (Debug.isDebugBuild)
         {
             debugMode(); 
         }
@@ -194,8 +194,17 @@ public class Rocket : MonoBehaviour
     }
     private void LoadNextScene()
     {
-        int Level = SceneManager.GetActiveScene().buildIndex;
-        SceneManager.LoadScene(Level + 1);
+        int currentLevel = (SceneManager.GetActiveScene().buildIndex);
+        int nextLevel = (currentLevel + 1);
+        if ((nextLevel) == (SceneManager.sceneCountInBuildSettings))
+        {
+            SceneManager.LoadScene(0);
+        }
+        else
+        {
+            SceneManager.LoadScene(nextLevel);
+        }
+
     }
 }
 
