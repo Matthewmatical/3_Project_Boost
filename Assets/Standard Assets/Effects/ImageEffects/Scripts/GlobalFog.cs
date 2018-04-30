@@ -1,6 +1,6 @@
 using System;
 using UnityEngine;
-
+/* broken file
 namespace UnityStandardAssets.ImageEffects
 {
     [ExecuteInEditMode]
@@ -98,3 +98,5 @@ namespace UnityStandardAssets.ImageEffects
         }
     }
 }
+
+    */

@@ -16,6 +16,11 @@ public class Rocket : MonoBehaviour
     bool isAlive = true;
     public static bool isTurbo;
     public Text countText;
+
+    public static int startingLives = 3;
+    bool GameOver;
+    public Text livesText;
+
     public int fuelGain = 100;
 
     public Camera main;
@@ -28,6 +33,7 @@ public class Rocket : MonoBehaviour
     [SerializeField] float brakeControl = 1f;
     [SerializeField] AudioClip engineSound;
     [SerializeField] AudioClip dieSound;
+    [SerializeField] AudioClip stallSound;
     [SerializeField] AudioClip levelSound;
 
     [SerializeField] ParticleSystem enginePart;
@@ -43,6 +49,7 @@ public class Rocket : MonoBehaviour
 
     void Start ()
     {
+
         ToggleCameraMode(); //Set 3rd Person At Start
         rigidBody = GetComponent<Rigidbody>();
         audioSource = GetComponent<AudioSource>();
@@ -52,7 +59,7 @@ public class Rocket : MonoBehaviour
 	void Update ()
     {
         FuelStuff();
-    
+        LifeCounter();
 
         if (Debug.isDebugBuild)
         {
@@ -71,12 +78,16 @@ public class Rocket : MonoBehaviour
 
 	}
 
+    private void LifeCounter()
+    {
+        livesText.text = ("Lives: " + startingLives);
+    }
+
     private void ReceieveCameraInput()
     {
         if (Input.GetKeyDown(KeyCode.V))
         {
             isFirstPerson = !isFirstPerson;
-
             ToggleCameraMode();
         }
 
@@ -88,14 +99,12 @@ public class Rocket : MonoBehaviour
         {
             main.enabled = false;
             fpver.enabled = true;
-            isFirstPerson = false;
 
         }
         else
         {
             fpver.enabled = false;
             main.enabled = true;
-            isFirstPerson = true;
         }
     }
 
@@ -116,7 +125,7 @@ public class Rocket : MonoBehaviour
     {
         if (fuelAmount <= 0)
         {
-            if (isAlive) { DeathCondition(); }
+            if (isAlive) { SlowDeath(); }
 
         }
         else
@@ -125,6 +134,18 @@ public class Rocket : MonoBehaviour
             countText.text = ("Fuel Reserve: " + fuelAmount.ToString());
 
         }
+    }
+
+    private void SlowDeath()
+    {
+        OutOfLives();
+        isAlive = false;
+        enginePart.Stop();
+        enginePart2.Stop();
+        enginePart3.Stop();
+        audioSource.Stop();
+        audioSource.PlayOneShot(stallSound);
+        Invoke("ReloadScene", 5f); //change time to parameter
     }
 
     private void debugMode()
@@ -260,14 +281,16 @@ public class Rocket : MonoBehaviour
                 {
                     return;
                 }
-                DeathCondition();
+                ExplosiveDeath();
                 break;
 
         }
     }
 
-    private void DeathCondition()
+    private void ExplosiveDeath()
     {
+        OutOfLives();
+
         isAlive = false;
         diePart.Play();
         enginePart.Stop();
@@ -277,6 +300,22 @@ public class Rocket : MonoBehaviour
         audioSource.PlayOneShot(dieSound);
         Invoke("ReloadScene", 3f); //change time to parameter
     }
+
+    private void OutOfLives()
+    {
+        if (startingLives == 0)
+        {
+            GameOver = false;
+            print("DISPLAY GAME OVER SCREEN");
+            startingLives = 3;
+
+        }
+        else
+        {
+            startingLives = startingLives - 1;
+        }
+    }
+
     private void LevelTransition()
     {
         isAlive = false;

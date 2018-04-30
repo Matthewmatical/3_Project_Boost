@@ -9,6 +9,7 @@ public class BGFollow : MonoBehaviour
 
     void Start () 
 	{
+        transform.position = new Vector3(0, 9.16f, 5);
         offset = transform.position - player.transform.position;
     }
 	
