@@ -13,6 +13,8 @@ public class Rocket : MonoBehaviour
     [SerializeField] float rotateControl = 150f;
     [SerializeField] int thrustControl;
 
+    [SerializeField] public static bool isPaused = false;
+
     bool isAlive = true;
     public static bool isTurbo;
     public Text countText;
@@ -35,6 +37,9 @@ public class Rocket : MonoBehaviour
     [SerializeField] AudioClip dieSound;
     [SerializeField] AudioClip stallSound;
     [SerializeField] AudioClip levelSound;
+    [SerializeField] AudioClip fuelSound;
+    [SerializeField] AudioClip pauseSound;
+    [SerializeField] AudioClip unpauseSound;
 
     [SerializeField] ParticleSystem enginePart;
     [SerializeField] ParticleSystem enginePart2;
@@ -60,6 +65,7 @@ public class Rocket : MonoBehaviour
     {
         FuelStuff();
         LifeCounter();
+        PauseGame();
 
         if (Debug.isDebugBuild)
         {
@@ -74,9 +80,38 @@ public class Rocket : MonoBehaviour
             Thrust();
             Rotate();
             ResetPos();
+
         }
 
 	}
+
+    private void PauseGame()
+    {
+
+        if (Input.GetKeyUp(KeyCode.P))
+        {
+            isPaused = !isPaused;
+
+            if (isPaused)
+            {
+                print("if ispaused");
+                audioSource.Stop();
+                audioSource.PlayOneShot(unpauseSound);
+                isAlive = true;
+                rigidBody.isKinematic = false;
+            }
+            else
+            {
+                print("else");
+                Vector3 currentPosition = transform.position;
+                isAlive = false;
+                audioSource.Stop();
+                audioSource.PlayOneShot(pauseSound);
+                rigidBody.isKinematic = true;
+            }
+
+        }
+    }
 
     private void LifeCounter()
     {
@@ -192,7 +227,7 @@ public class Rocket : MonoBehaviour
     private void Thrust()
     {
 
-        if (Input.GetKey(KeyCode.UpArrow))
+        if (Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.W))
         {
             ApplyThrust();
         }
@@ -244,7 +279,7 @@ public class Rocket : MonoBehaviour
             rigidBody.rotation = Quaternion.identity;
             rigidBody.isKinematic = false;
         }
-            
+
         
     }
 
@@ -253,7 +288,8 @@ public class Rocket : MonoBehaviour
         switch (other.gameObject.tag)
         {
             case "Fuel":
-                
+                audioSource.Stop();
+                audioSource.PlayOneShot(fuelSound);
                 fuelAmount = fuelAmount + fuelGain;
                 Destroy(other.gameObject);
                 break;
