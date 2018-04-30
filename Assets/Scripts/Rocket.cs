@@ -5,11 +5,12 @@ using UnityEngine.UI;
 public class Rocket : MonoBehaviour
 {
     //Starting Parameters //////////////////////////
-    public const int fuelCanister = 100;
+    public const int fuelCanister = 1000;
     int currentFuel = 500;
     float startingDrag = 0.2f;
     const int startingThrust = 10000;
-    public static int startingLives = 3;
+    public static int currentLives = 5;
+    Vector3 currentVelocity;
 
     //Tweakable Params //////////////////////////
     [SerializeField] int thrustAmount;
@@ -23,12 +24,15 @@ public class Rocket : MonoBehaviour
     public static bool isBraking = false;
     bool isFirstPerson = false;
     bool allowedControl = true;
+    bool allowSave = false;
+    bool blastOff = false;
     bool isGodMode = false;
-    bool GameOver = false;
+    bool isGameOver = false;
 
     public Text fuelText;
     public Text livesText;
-
+    public Text respawnText;
+    
     public Camera main;
     public Camera fpver;
 
@@ -54,6 +58,7 @@ public class Rocket : MonoBehaviour
 
     void Start ()
     {
+        respawnText.text = "";
         ToggleCameraMode(); //Set 3rd Person At Start
         rigidBody = GetComponent<Rigidbody>();
         audioSource = GetComponent<AudioSource>();
@@ -62,8 +67,25 @@ public class Rocket : MonoBehaviour
 	
 	void Update ()
     {
-        FuelCheck();
-        LifeCounter();
+        //testing velocity
+
+        if (allowSave & currentFuel > 0)
+        {
+            CancelInvoke();
+            allowedControl = true;
+            allowSave = false;
+            currentFuel = currentFuel * 2;
+            print("MEGA SAVE SCREEN SOMETHING HUGE"); //BIG SCREEN EVENT WHEN THIS HAPPENS
+        }
+        if (blastOff & (Input.GetKeyUp(KeyCode.Space)))
+        {
+            blastOff = false;
+            CancelInvoke();
+            ReSpawn();
+        }
+
+        FuelHandler();
+        LifeHandler();
         PauseInput();
 
         if (allowedControl)
@@ -83,11 +105,16 @@ public class Rocket : MonoBehaviour
 
 
     // START INPUT COMMAND CODE //////////////////////////
-    private void LifeCounter()
+    private void LifeHandler()
     {
-        livesText.text = ("Lives: " + startingLives);
+        livesText.text = ("Lives: " + currentLives);
+        if (currentLives == 0)
+        {
+            isGameOver = true;
+            print("DISPLAY GAME OVER SCREEN AND SET LIVES BACK TO STARTING VALUE");
+        }
     }
-    private void FuelCheck()
+    private void FuelHandler()
     {
         fuelText.text = ("Fuel Reserve: " + currentFuel.ToString());
 
@@ -170,12 +197,15 @@ public class Rocket : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.R))
         {
+            if (allowedControl)
+            {
             rigidBody.velocity = Vector3.zero;
             rigidBody.angularVelocity = Vector3.zero;
             rigidBody.isKinematic = true;
             rigidBody.position = new Vector3(0, 16, 0);
             rigidBody.rotation = Quaternion.identity;
             rigidBody.isKinematic = false;
+            }
         }
     }
 
@@ -264,8 +294,8 @@ public class Rocket : MonoBehaviour
     }
 
 
-
     // START COLLISION DETECTION CODE //////////////////////////
+    //PICK UP POWERUP / WORLD ITEMS HERE
     private void OnTriggerEnter(Collider other)
     {
         switch (other.gameObject.tag)
@@ -280,19 +310,20 @@ public class Rocket : MonoBehaviour
                 break;              
         }
 
-    } //PICK UP WORLD ITEMS HERE
+    } 
 
     void OnCollisionEnter(Collision collision)
     {
 
-        if (!allowedControl) { return; } //Stops additional collision after loss of control from death state or something
+        //if (!allowedControl) { return; } //Stops additional collision after loss of control from death state or something
 
         switch (collision.gameObject.tag)
         {
             case "Friendly":
                 break;
+
             case "Finish":
-                LevelTransition();
+                LevelComplete();
                 break;
 
             default:
@@ -300,6 +331,7 @@ public class Rocket : MonoBehaviour
                 {
                     return;
                 }
+                Vector3 currentVelocity = (rigidBody.velocity); //Store Velocity for Explosion
                 ExplosiveDeath();
                 break;
 
@@ -308,43 +340,38 @@ public class Rocket : MonoBehaviour
 
     private void ExplosiveDeath()
     {
-        OutOfLives();
+
         allowedControl = false;
+        allowSave = false;
+        blastOff = true;
+        respawnText.text = "[PRESS SPACEBAR TO RESPAWN]";
+        rigidBody.drag = 0;
+        rigidBody.constraints = RigidbodyConstraints.None;
+        Vector3 skaDoosh = new Vector3(0, 0, Random.Range(-1.0f, 1.0f));
+        rigidBody.AddRelativeForce(currentVelocity * 2f + skaDoosh);
         diePart.Play();
         enginePart.Stop();
         enginePart2.Stop();
         enginePart3.Stop();
         audioSource.Stop();
         audioSource.PlayOneShot(dieSound);
-        Invoke("ReloadScene", transitionTime);
+        Invoke("ReSpawn", transitionTime * 4);
+
+
     }
     private void SlowDeath()
     {
-        OutOfLives();
-        allowedControl = false;
-        enginePart.Stop();
-        enginePart2.Stop();
-        enginePart3.Stop();
-        audioSource.Stop();
-        audioSource.PlayOneShot(stallSound);
-        Invoke("ReloadScene", transitionTime); 
+            allowedControl = false;
+            allowSave = true;
+            enginePart.Stop();
+            enginePart2.Stop();
+            enginePart3.Stop();
+            audioSource.Stop();
+            audioSource.PlayOneShot(stallSound);
+            Invoke("ReSpawn", transitionTime);
     }
 
-    private void OutOfLives()
-    {
-        if (startingLives > 0)
-        {
-            startingLives = startingLives - 1;
-        }
-        else
-        {
-            GameOver = true;
-            print("DISPLAY GAME OVER SCREEN");
-            startingLives = 3;
-        }
-    }
-
-    private void LevelTransition()  // this is very messy ugly code
+    private void LevelComplete()  // this is very messy ugly code
     {
         allowedControl = false;
         audioSource.Stop();
@@ -352,9 +379,15 @@ public class Rocket : MonoBehaviour
         levelPart.Play();
         Invoke("LoadNextScene", 5f); //change time to parameter
     }
-
     private void ReloadScene()
     {
+
+        int currentLevel = (SceneManager.GetActiveScene().buildIndex);
+        SceneManager.LoadScene(currentLevel);
+    }
+    private void ReSpawn()  //Reloads Level With Life Penalty
+    {
+        currentLives = currentLives - 1;
         int currentLevel = (SceneManager.GetActiveScene().buildIndex);
         SceneManager.LoadScene(currentLevel);
     }
@@ -370,8 +403,6 @@ public class Rocket : MonoBehaviour
         {
             SceneManager.LoadScene(nextLevel);
         }
-
     }
 }
-
 
