@@ -14,17 +14,20 @@ public class Rocket : MonoBehaviour
     [SerializeField] float rotateControl = 150f;
     [SerializeField] int thrustControl;
 
+    public static bool isTurbo;
 
     [SerializeField] float brakeControl = 1f;
     [SerializeField] AudioClip engineSound;
     [SerializeField] AudioClip dieSound;
     [SerializeField] AudioClip levelSound;
     [SerializeField] ParticleSystem enginePart;
+    [SerializeField] ParticleSystem enginePart2;
+    [SerializeField] ParticleSystem enginePart3;
     [SerializeField] ParticleSystem diePart;
     [SerializeField] ParticleSystem levelPart;
 
     const float baseDrag = 0.2f;
-    const int startingThrust = 1500;
+    const int startingThrust = 100000;
 
     void Start ()
     {
@@ -66,6 +69,7 @@ public class Rocket : MonoBehaviour
 
     private void ApplyTurbo()
     {
+        isTurbo = true;
 
         if (Input.GetKey(KeyCode.LeftShift))
         {
@@ -73,7 +77,8 @@ public class Rocket : MonoBehaviour
             thrustControl = doubleThrust;
         }
         else
-        {
+        { 
+            isTurbo = false;
             thrustControl = startingThrust;
         }
             
@@ -100,6 +105,8 @@ public class Rocket : MonoBehaviour
         else
         {
             enginePart.Stop();
+            enginePart2.Stop();
+            enginePart3.Stop();
             audioSource.Stop();
         }
     }
@@ -111,6 +118,8 @@ public class Rocket : MonoBehaviour
             audioSource.PlayOneShot(engineSound);
         }
         enginePart.Play();
+        enginePart2.Play();
+        enginePart3.Play();
     }
     private void Rotate()
     {
@@ -118,11 +127,11 @@ public class Rocket : MonoBehaviour
 
         float rotationThisFrame = rotateControl * Time.deltaTime;
             
-        if (Input.GetKey(KeyCode.LeftArrow))
+        if (Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.A))
         {
             transform.Rotate(Vector3.forward * rotationThisFrame);
         }
-        else if (Input.GetKey(KeyCode.RightArrow))
+        else if (Input.GetKey(KeyCode.RightArrow) || Input.GetKey(KeyCode.D))
         {
             transform.Rotate(-Vector3.forward * rotationThisFrame);
         }
@@ -173,6 +182,8 @@ public class Rocket : MonoBehaviour
         state = State.Dying;
         diePart.Play();
         enginePart.Stop();
+        enginePart2.Stop();
+        enginePart3.Stop();
         audioSource.Stop();
         audioSource.PlayOneShot(dieSound);
 
@@ -184,7 +195,7 @@ public class Rocket : MonoBehaviour
         audioSource.Stop();
         audioSource.PlayOneShot(levelSound);
         levelPart.Play();
-        Invoke("LoadNextScene", 3f); //change time to parameter
+        Invoke("LoadNextScene", 15f); //change time to parameter
     }
 
     private void ReloadScene()
