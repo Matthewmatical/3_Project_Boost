@@ -67,22 +67,7 @@ public class Rocket : MonoBehaviour
 	
 	void Update ()
     {
-        //testing velocity
-
-        if (allowSave & currentFuel > 0)
-        {
-            CancelInvoke();
-            allowedControl = true;
-            allowSave = false;
-            currentFuel = currentFuel * 2;
-            print("MEGA SAVE SCREEN SOMETHING HUGE"); //BIG SCREEN EVENT WHEN THIS HAPPENS
-        }
-        if (blastOff & (Input.GetKeyUp(KeyCode.Space)))
-        {
-            blastOff = false;
-            CancelInvoke();
-            ReSpawn();
-        }
+        BigSave(); //Grabbing A Fuel Cannister AFter Running Out of Fuel for Double Fuel!
 
         FuelHandler();
         LifeHandler();
@@ -100,6 +85,24 @@ public class Rocket : MonoBehaviour
         if (Debug.isDebugBuild)
         {
             DebugCommands();
+        }
+    }
+
+    private void BigSave()
+    {
+        if (allowSave & currentFuel > 0)
+        {
+            CancelInvoke();
+            allowedControl = true;
+            allowSave = false;
+            currentFuel = currentFuel * 2;
+            print("MEGA SAVE SCREEN SOMETHING HUGE"); //BIG SCREEN EVENT WHEN THIS HAPPENS
+        }
+        if (blastOff & (Input.GetKeyUp(KeyCode.Space)))
+        {
+            blastOff = false;
+            CancelInvoke();
+            ReSpawn();
         }
     }
 
@@ -257,16 +260,18 @@ public class Rocket : MonoBehaviour
             enginePart.Stop();
             enginePart2.Stop();
             enginePart3.Stop();
-            audioSource.Stop();
         }
-    } //LOOK INTO THIS. DOUBLE FUEL USAGE IF TURBO, FIX SOUND BUG 
+    }
     private void ApplyThrust()
     {
+        if (isTurbo) { currentFuel = currentFuel - 10; } else { currentFuel = currentFuel - 5; } //Fuel Drain
         rigidBody.AddRelativeForce(Vector3.up * thrustAmount * Time.deltaTime);
-        currentFuel = currentFuel - 5; //Fuel Drain
-        if (!audioSource.isPlaying)
-        {
-            audioSource.PlayOneShot(engineSound);
+        if (audioSource.isPlaying)
+            {
+        }
+        else
+        { 
+        audioSource.PlayOneShot(engineSound);
         }
         enginePart.Play();
         enginePart2.Play();
