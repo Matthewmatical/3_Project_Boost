@@ -27,7 +27,7 @@ public class SmoothMusic : MonoBehaviour
 
     void Update()
     {
-        int Level = SceneManager.GetActiveScene().buildIndex;
+        int Level = SceneManager.GetActiveScene().buildIndex;  //fix this to work on any level, currently broken on main levels
         if (Level == 2)
         {
             audioSource.Stop();

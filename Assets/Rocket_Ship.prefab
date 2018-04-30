@@ -1025,15 +1025,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: deb216d3d0d295e41bc3c6fffc13444a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  godMode: 0
+  thrustAmount: 10000
   rotateControl: 400
-  thrustControl: 5000
-  countText: {fileID: 0}
+  brakeControl: 2
+  transitionTime: 5
+  fuelText: {fileID: 0}
   livesText: {fileID: 0}
-  fuelGain: 1000
   main: {fileID: 0}
   fpver: {fileID: 20766662313117290}
-  brakeControl: 100
   engineSound: {fileID: 8300000, guid: 7c8bfd94fe300d94395adb737ce68a06, type: 3}
   dieSound: {fileID: 8300000, guid: 56fe70bbdf69c7244867fe165026620f, type: 3}
   stallSound: {fileID: 8300000, guid: 355596f69b3ade841ab763494275aeea, type: 3}
@@ -1046,7 +1045,6 @@ MonoBehaviour:
   enginePart3: {fileID: 198466365360088182}
   diePart: {fileID: 198286487333135592}
   levelPart: {fileID: 198891030468095236}
-  fuelAmount: 555
 --- !u!123 &123121390264325770
 LensFlare:
   m_ObjectHideFlags: 1

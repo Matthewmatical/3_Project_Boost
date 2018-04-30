@@ -1,38 +1,42 @@
-﻿using System;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
-using System.Collections;
-using Random = UnityEngine.Random;
 
 public class Rocket : MonoBehaviour
 {
-    int Level;
-
-    [SerializeField] bool godMode = true;
-    [SerializeField] float rotateControl = 150f;
-    [SerializeField] int thrustControl;
-
-    [SerializeField] public static bool isPaused = false;
-
-    bool isAlive = true;
-    public static bool isTurbo;
-    public Text countText;
-
+    //Starting Parameters //////////////////////////
+    public const int fuelCanister = 100;
+    int currentFuel = 500;
+    float startingDrag = 0.2f;
+    const int startingThrust = 10000;
     public static int startingLives = 3;
-    bool GameOver;
-    public Text livesText;
 
-    public int fuelGain = 100;
+    //Tweakable Params //////////////////////////
+    [SerializeField] int thrustAmount;
+    [SerializeField] float rotateControl = 400f;
+    [SerializeField] float brakeControl = 10f;
+    [SerializeField] float transitionTime = 4f;
+
+    //Fuck Booleans //////////////////////////
+    public static bool isTurbo = false;
+    public static bool isPaused = false;
+    public static bool isBraking = false;
+    bool isFirstPerson = false;
+    bool allowedControl = true;
+    bool isGodMode = false;
+    bool GameOver = false;
+
+    public Text fuelText;
+    public Text livesText;
 
     public Camera main;
     public Camera fpver;
-    bool isFirstPerson = false;
 
+    //Child References //////////////////////////
     Rigidbody rigidBody;
     AudioSource audioSource;
 
-    [SerializeField] float brakeControl = 1f;
+    //Component References //////////////////////////
     [SerializeField] AudioClip engineSound;
     [SerializeField] AudioClip dieSound;
     [SerializeField] AudioClip stallSound;
@@ -47,14 +51,9 @@ public class Rocket : MonoBehaviour
     [SerializeField] ParticleSystem diePart;
     [SerializeField] ParticleSystem levelPart;
 
-    public int fuelAmount = 100;
-
-    const float baseDrag = 0.2f;
-    const int startingThrust = 10000;
 
     void Start ()
     {
-
         ToggleCameraMode(); //Set 3rd Person At Start
         rigidBody = GetComponent<Rigidbody>();
         audioSource = GetComponent<AudioSource>();
@@ -63,59 +62,74 @@ public class Rocket : MonoBehaviour
 	
 	void Update ()
     {
-        FuelStuff();
+        FuelCheck();
         LifeCounter();
-        PauseGame();
+        PauseInput();
+
+        if (allowedControl)
+        {
+            ReceieveCameraInput();
+            TurboInput();
+            AirBrakeInput();
+            ThrustInput();
+            RotationInput();
+        }
 
         if (Debug.isDebugBuild)
         {
-            debugMode(); 
-        }
-        if (isAlive)
-        {
-            ReceieveCameraInput();
-
-            ApplyTurbo();
-            AirBrake();
-            Thrust();
-            Rotate();
-            ResetPos();
-
-        }
-
-	}
-
-    private void PauseGame()
-    {
-
-        if (Input.GetKeyUp(KeyCode.P))
-        {
-            isPaused = !isPaused;
-
-            if (isPaused)
-            {
-                print("if ispaused");
-                audioSource.Stop();
-                audioSource.PlayOneShot(unpauseSound);
-                isAlive = true;
-                rigidBody.isKinematic = false;
-            }
-            else
-            {
-                print("else");
-                Vector3 currentPosition = transform.position;
-                isAlive = false;
-                audioSource.Stop();
-                audioSource.PlayOneShot(pauseSound);
-                rigidBody.isKinematic = true;
-            }
-
+            DebugCommands();
         }
     }
 
+
+    // START INPUT COMMAND CODE //////////////////////////
     private void LifeCounter()
     {
         livesText.text = ("Lives: " + startingLives);
+    }
+    private void FuelCheck()
+    {
+        fuelText.text = ("Fuel Reserve: " + currentFuel.ToString());
+
+        if (currentFuel <= -1)
+        {
+            if (isGodMode)
+            {
+            }
+            else
+            {
+                currentFuel = 0;
+                allowedControl = false;
+                SlowDeath();
+            }
+        }
+    }
+
+    private void PauseInput()
+    {
+        if (Input.GetKeyDown(KeyCode.P))
+        {
+            isPaused = !isPaused;
+            Pause();
+        }
+    }
+    private void Pause()
+    {
+        if (isPaused)
+        {
+            allowedControl = false;
+            audioSource.Stop();
+            audioSource.PlayOneShot(pauseSound);
+            Time.timeScale = 0;
+        }
+        else
+        {
+            audioSource.Stop();
+            audioSource.PlayOneShot(unpauseSound);
+            allowedControl = true;
+            Time.timeScale = 1;
+            audioSource.PlayOneShot(unpauseSound);
+        }
     }
 
     private void ReceieveCameraInput()
@@ -127,7 +141,6 @@ public class Rocket : MonoBehaviour
         }
 
     }
-
     private void ToggleCameraMode()
     {
         if (isFirstPerson)
@@ -143,88 +156,66 @@ public class Rocket : MonoBehaviour
         }
     }
 
-    private void FuelStuff()
+    private void DebugCommands()
     {
-        if (godMode == true)
-        {
-            return;
-        }
-        else
-        {
-            OutofGas();
-        }
-
-    }
-
-    private void OutofGas()
-    {
-        if (fuelAmount <= 0)
-        {
-            if (isAlive) { SlowDeath(); }
-
-        }
-        else
-        {
-            fuelAmount = fuelAmount - 1;
-            countText.text = ("Fuel Reserve: " + fuelAmount.ToString());
-
-        }
-    }
-
-    private void SlowDeath()
-    {
-        OutOfLives();
-        isAlive = false;
-        enginePart.Stop();
-        enginePart2.Stop();
-        enginePart3.Stop();
-        audioSource.Stop();
-        audioSource.PlayOneShot(stallSound);
-        Invoke("ReloadScene", 5f); //change time to parameter
-    }
-
-    private void debugMode()
-    {
-        if (Input.GetKey(KeyCode.L))
+        if (Input.GetKeyDown(KeyCode.L))
         {
             LoadNextScene();
         }
 
         if (Input.GetKeyDown(KeyCode.C))
         {
-            godMode = !godMode;
+            isGodMode = !isGodMode;
+        }
+
+        if (Input.GetKeyDown(KeyCode.R))
+        {
+            rigidBody.velocity = Vector3.zero;
+            rigidBody.angularVelocity = Vector3.zero;
+            rigidBody.isKinematic = true;
+            rigidBody.position = new Vector3(0, 16, 0);
+            rigidBody.rotation = Quaternion.identity;
+            rigidBody.isKinematic = false;
         }
     }
 
+    private void TurboInput()
+    {
+        ApplyTurbo();
+    }
     private void ApplyTurbo()
     {
-        isTurbo = true;
-
         if (Input.GetKey(KeyCode.LeftShift))
         {
-            int doubleThrust = startingThrust * 4;
-            thrustControl = doubleThrust;
+            isTurbo = true;
+            thrustAmount = startingThrust * 2; // TODO ADD VAR FOR ITEM UPGRADE HERE BOOST 2X, 3X, 4X
         }
         else
-        { 
+        {
             isTurbo = false;
-            thrustControl = startingThrust;
+            thrustAmount = startingThrust;
         }
-            
     }
-    private void AirBrake()
+
+    private void AirBrakeInput()
+    {
+        ApplyAirBrake();
+    }
+    private void ApplyAirBrake()
     {
         if (Input.GetKey(KeyCode.Space))
         {
-
             rigidBody.drag = (brakeControl);
+            isBraking = true;
         }
         else
         {
-            rigidBody.drag = (baseDrag);  //make into variable
+            rigidBody.drag = (startingDrag);
+            isBraking = false;
         }
     }
-    private void Thrust()
+
+    private void ThrustInput()
     {
 
         if (Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.W))
@@ -238,10 +229,11 @@ public class Rocket : MonoBehaviour
             enginePart3.Stop();
             audioSource.Stop();
         }
-    }
+    } //LOOK INTO THIS. DOUBLE FUEL USAGE IF TURBO, FIX SOUND BUG 
     private void ApplyThrust()
     {
-        rigidBody.AddRelativeForce(Vector3.up * thrustControl * Time.deltaTime);
+        rigidBody.AddRelativeForce(Vector3.up * thrustAmount * Time.deltaTime);
+        currentFuel = currentFuel - 5; //Fuel Drain
         if (!audioSource.isPlaying)
         {
             audioSource.PlayOneShot(engineSound);
@@ -250,39 +242,30 @@ public class Rocket : MonoBehaviour
         enginePart2.Play();
         enginePart3.Play();
     }
-    private void Rotate()
-    {
-        rigidBody.freezeRotation = true; //take manual control
 
-        float rotationThisFrame = rotateControl * Time.deltaTime;
-            
+    private void RotationInput()
+    {
+        rigidBody.angularVelocity = Vector3.zero; //disable physics when turning
+        float rotationThisFrame = rotateControl * Time.deltaTime; //makes sure turn rate matches framerate
+        ApplyRotation(rotationThisFrame);
+    }
+    private void ApplyRotation(float rotationThisFrame)
+    {
         if (Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.A))
         {
+            currentFuel = currentFuel - 1; //Fuel Drain
             transform.Rotate(Vector3.forward * rotationThisFrame);
         }
         else if (Input.GetKey(KeyCode.RightArrow) || Input.GetKey(KeyCode.D))
         {
+            currentFuel = currentFuel - 1; //Fuel Drain
             transform.Rotate(-Vector3.forward * rotationThisFrame);
         }
-
-        rigidBody.freezeRotation = false; //resume physics control
-
-    }
-    private void ResetPos()
-    {
-        if (Input.GetKeyUp(KeyCode.R))
-        {
-            rigidBody.velocity = Vector3.zero;
-            rigidBody.angularVelocity = Vector3.zero;
-            rigidBody.isKinematic = true;
-            rigidBody.position = new Vector3(0, 3, 0);
-            rigidBody.rotation = Quaternion.identity;
-            rigidBody.isKinematic = false;
-        }
-
-        
     }
 
+
+
+    // START COLLISION DETECTION CODE //////////////////////////
     private void OnTriggerEnter(Collider other)
     {
         switch (other.gameObject.tag)
@@ -290,19 +273,19 @@ public class Rocket : MonoBehaviour
             case "Fuel":
                 audioSource.Stop();
                 audioSource.PlayOneShot(fuelSound);
-                fuelAmount = fuelAmount + fuelGain;
+                currentFuel = currentFuel + fuelCanister;
                 Destroy(other.gameObject);
                 break;
             default:
                 break;              
         }
 
-    }
+    } //PICK UP WORLD ITEMS HERE
 
     void OnCollisionEnter(Collision collision)
     {
-        //Guard Collision When Not Controlling
-        if (!isAlive) { return; }
+
+        if (!allowedControl) { return; } //Stops additional collision after loss of control from death state or something
 
         switch (collision.gameObject.tag)
         {
@@ -313,7 +296,7 @@ public class Rocket : MonoBehaviour
                 break;
 
             default:
-                if (godMode == true)
+                if (isGodMode == true)
                 {
                     return;
                 }
@@ -326,35 +309,44 @@ public class Rocket : MonoBehaviour
     private void ExplosiveDeath()
     {
         OutOfLives();
-
-        isAlive = false;
+        allowedControl = false;
         diePart.Play();
         enginePart.Stop();
         enginePart2.Stop();
         enginePart3.Stop();
         audioSource.Stop();
         audioSource.PlayOneShot(dieSound);
-        Invoke("ReloadScene", 3f); //change time to parameter
+        Invoke("ReloadScene", transitionTime);
+    }
+    private void SlowDeath()
+    {
+        OutOfLives();
+        allowedControl = false;
+        enginePart.Stop();
+        enginePart2.Stop();
+        enginePart3.Stop();
+        audioSource.Stop();
+        audioSource.PlayOneShot(stallSound);
+        Invoke("ReloadScene", transitionTime); 
     }
 
     private void OutOfLives()
     {
-        if (startingLives == 0)
-        {
-            GameOver = false;
-            print("DISPLAY GAME OVER SCREEN");
-            startingLives = 3;
-
-        }
-        else
+        if (startingLives > 0)
         {
             startingLives = startingLives - 1;
         }
+        else
+        {
+            GameOver = true;
+            print("DISPLAY GAME OVER SCREEN");
+            startingLives = 3;
+        }
     }
 
-    private void LevelTransition()
+    private void LevelTransition()  // this is very messy ugly code
     {
-        isAlive = false;
+        allowedControl = false;
         audioSource.Stop();
         audioSource.PlayOneShot(levelSound);
         levelPart.Play();
@@ -363,8 +355,8 @@ public class Rocket : MonoBehaviour
 
     private void ReloadScene()
     {
-        int Level = SceneManager.GetActiveScene().buildIndex;
-        SceneManager.LoadScene(Level);
+        int currentLevel = (SceneManager.GetActiveScene().buildIndex);
+        SceneManager.LoadScene(currentLevel);
     }
     private void LoadNextScene()
     {
@@ -376,7 +368,6 @@ public class Rocket : MonoBehaviour
         }
         else
         {
-
             SceneManager.LoadScene(nextLevel);
         }
 
